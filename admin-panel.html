@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #282c34;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 90%;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+            background-color: #fff;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        tbody tr:nth-child(odd) {
+            background: #f9f9f9;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Panel</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>UID</th>
+                    <th>Registration</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="user-data-table">
+                <!-- Data will be dynamically inserted here -->
+            </tbody>
+        </table>
+        <div class="buttons">
+            <button onclick="addRow()">Add Row</button>
+            <button onclick="saveChanges()">Save Changes</button>
+        </div>
+    </div>
+
+    <script>
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwFyX4ObAsDsLgJQ9s0kweGM_FAACBR4G7lVrDtp6A2EV81IZF4cduwJJtfjjsuaUFPgA/exec"; // Replace with your Apps Script Web App URL
+
+        // Fetch data from Google Sheets
+        async function fetchData() {
+            try {
+                const response = await fetch(scriptURL);
+                if (!response.ok) throw new Error("Failed to fetch data");
+                const data = await response.json();
+                const tableBody = document.getElementById('user-data-table');
+                tableBody.innerHTML = '';
+                data.forEach(row => {
+                    const tr = createTableRow(row);
+                    tableBody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                alert('Error fetching data. Check your script URL or permissions.');
+            }
+        }
+
+        // Create a new table row
+        function createTableRow(rowData = ["", "", ""]) {
+            const tr = document.createElement('tr');
+            rowData.forEach(cellData => {
+                const td = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = "text";
+                input.value = cellData;
+                td.appendChild(input);
+                tr.appendChild(td);
+            });
+            const deleteCell = document.createElement('td');
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = "Delete";
+            deleteBtn.onclick = () => tr.remove();
+            deleteCell.appendChild(deleteBtn);
+            tr.appendChild(deleteCell);
+            return tr;
+        }
+
+        // Add a new empty row
+        function addRow() {
+            const tableBody = document.getElementById('user-data-table');
+            const newRow = createTableRow();
+            tableBody.appendChild(newRow);
+        }
+
+        // Save changes to Google Sheets
+        async function saveChanges() {
+            const tableRows = document.querySelectorAll('#user-data-table tr');
+            const updatedData = Array.from(tableRows).map(row => {
+                const inputs = row.querySelectorAll('input');
+                return Array.from(inputs).map(input => input.value);
+            });
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: updatedData }),
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message || 'Data updated successfully!');
+                } else {
+                    alert('Error: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error updating data:', error);
+                alert('Error saving changes. Check your script URL or permissions.');
+            }
+        }
+
+        // Fetch initial data on page load
+        fetchData();
+    </script>
+</body>
+</html>
